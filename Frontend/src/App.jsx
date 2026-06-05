@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import CustomerDetailsPage from "./pages/CustomerDetailsPage";
-import SentMatchesPage from "./pages/SentMatchesPage";
+import MatchingAlgoPage from "./pages/MatchingAlgoPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
@@ -31,10 +31,10 @@ function App() {
         />
 
         <Route
-          path="/sent-matches"
+          path="/matching-algorithm"
           element={
             <ProtectedRoute>
-              <SentMatchesPage />
+              <MatchingAlgoPage />
             </ProtectedRoute>
           }
         />

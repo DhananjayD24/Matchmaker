@@ -1,9 +1,16 @@
 [
   {
-    "id": 1780612198714,
+    "id": 1780694771230,
+    "customerId": 126,
+    "profileId": 80,
+    "aiIntroduction": "Siddharth is a Product Manager at Uber who, like you, does not wish to have children and enjoys outdoor adventures and exploring new destinations. He is open to relocating and values emotional maturity and mutual respect. This match offers strong alignment on core life decisions and lifestyle preferences.",
+    "sentAt": "2026-06-05T21:26:11.230Z"
+  },
+  {
+    "id": 1780695231080,
     "customerId": 1,
-    "profileId": 105,
-    "aiIntroduction": "Test introduction",
-    "sentAt": "2026-06-04T22:29:58.714Z"
+    "profileId": 156,
+    "aiIntroduction": "Ishita Reddy is a 31-year-old HR Manager from Nagpur, sharing your openness to relocation. She is deeply family-oriented, enjoys pets, and is looking for a supportive partner who values family connections. Her interest in new cuisines and career aspirations could complement your lifestyle and professional drive.",
+    "sentAt": "2026-06-05T21:33:51.080Z"
   }
 ]

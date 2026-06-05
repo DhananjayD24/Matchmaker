@@ -1,87 +1,71 @@
 export default function AIReviewModal({
   review,
   onClose,
+  onSendClick,
+  match,
+  sentMatches = [],
 }) {
   if (!review) return null;
 
-  const badgeColor =
-    review.overallCompatibility === "High"
-      ? "bg-green-100 text-green-700"
-      : review.overallCompatibility ===
-        "Medium"
-      ? "bg-yellow-100 text-yellow-700"
-      : "bg-red-100 text-red-700";
+  // Minimal safe render to validate JSX syntax
+  const isSent = Boolean(match && (sentMatches || []).includes(match.id));
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between mb-6">
-          <h2 className="text-2xl font-bold">
-            AI Compatibility Review
-          </h2>
-
-          <button
-            onClick={onClose}
-            className="text-xl"
-          >
-            ✕
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 w-full max-w-2xl">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-bold">AI Compatibility Review</h2>
+          <button onClick={onClose} className="text-sm">
+            Close
           </button>
         </div>
 
-        <span
-          className={`px-3 py-1 rounded-full ${badgeColor}`}
-        >
-          {review.overallCompatibility}
-        </span>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <h3 className="font-semibold mb-2">Pros</h3>
+            <ul className="list-disc list-inside text-sm text-slate-700">
+              {(review.pros || []).map((pro, i) => (
+                <li key={i}>{pro}</li>
+              ))}
+            </ul>
+          </div>
 
-        <div className="mt-6">
-          <h3 className="font-bold mb-3">
-            Pros
-          </h3>
-
-          <ul className="space-y-2">
-            {review.pros?.map(
-              (pro, index) => (
-                <li key={index}>
-                  ✅ {pro}
-                </li>
-              )
-            )}
-          </ul>
+          <div>
+            <h3 className="font-semibold mb-2">Cons</h3>
+            <ul className="list-disc list-inside text-sm text-slate-700">
+              {(review.cons || []).map((con, i) => (
+                <li key={i}>{con}</li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="mt-6">
-          <h3 className="font-bold mb-3">
-            Cons
-          </h3>
-
-          <ul className="space-y-2">
-            {review.cons?.map(
-              (con, index) => (
-                <li key={index}>
-                  ⚠️ {con}
-                </li>
-              )
-            )}
-          </ul>
+          <h3 className="font-semibold mb-1">Summary</h3>
+          <p className="text-sm text-slate-700">{review.summary}</p>
         </div>
 
         <div className="mt-6">
-          <h3 className="font-bold mb-2">
-            Summary
-          </h3>
-
-          <p>{review.summary}</p>
-        </div>
-
-        <div className="mt-6 bg-blue-50 p-4 rounded-lg">
-          <h3 className="font-bold mb-2">
-            AI Introduction
-          </h3>
-
-          <p>
-            {review.matchIntroduction}
+          <h3 className="font-semibold mb-2">Match Introduction Email</h3>
+          <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 whitespace-pre-wrap">
+            {review.matchIntroduction || "No introduction available"}
           </p>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="rounded-md px-4 py-2 border border-slate-200 text-sm font-semibold"
+          >
+            Close
+          </button>
+          <button
+            onClick={() => onSendClick && onSendClick(match, review)}
+            disabled={!match || isSent}
+            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:opacity-60 disabled:pointer-events-none"
+          >
+            {isSent ? "Match Sent" : "Send Match"}
+          </button>
         </div>
       </div>
     </div>

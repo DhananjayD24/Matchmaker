@@ -2,7 +2,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
 function getLLM() {
   return new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash",
     apiKey: process.env.GEMINI_API_KEY,
     temperature: 0.3,
   });

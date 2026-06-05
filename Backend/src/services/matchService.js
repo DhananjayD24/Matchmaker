@@ -53,9 +53,7 @@ function profileToVector(profile) {
 
     profile.verified === "Yes" ? 1 : 0,
 
-    ...(profile.hobbies || []).map((hobby) =>
-      stringToNumber(hobby)
-    ),
+    ...(profile.hobbies || []).map((hobby) => stringToNumber(hobby)),
   ];
 }
 
@@ -72,16 +70,11 @@ function dotProduct(a, b) {
 }
 
 function magnitude(vec) {
-  return Math.sqrt(
-    vec.reduce((sum, val) => sum + val * val, 0)
-  );
+  return Math.sqrt(vec.reduce((sum, val) => sum + val * val, 0));
 }
 
 function cosineSimilarity(v1, v2) {
-  return (
-    dotProduct(v1, v2) /
-    (magnitude(v1) * magnitude(v2))
-  );
+  return dotProduct(v1, v2) / (magnitude(v1) * magnitude(v2));
 }
 
 function passesHardFilters(customer, candidate) {
@@ -93,23 +86,19 @@ function passesHardFilters(customer, candidate) {
     return false;
   }
 
-  if (customer.caste !== candidate.caste) {
-    return false;
-  }
-
   if (customer.wantKids !== candidate.wantKids) {
     return false;
   }
 
   const sameLocation =
-    customer.country === candidate.country &&
-    customer.city === candidate.city;
+    customer.country === candidate.country && customer.city === candidate.city;
 
-  if (
-    !sameLocation &&
-    customer.openToRelocate !== "Yes" &&
-    candidate.openToRelocate !== "Yes"
-  ) {
+  const relocationAllowed =
+    sameLocation ||
+    customer.openToRelocate === "Yes" ||
+    candidate.openToRelocate === "Yes";
+
+  if (!relocationAllowed) {
     return false;
   }
 
@@ -119,8 +108,7 @@ function passesHardFilters(customer, candidate) {
     }
 
     if (
-      calculateAge(candidate.dateOfBirth) >=
-      calculateAge(customer.dateOfBirth)
+      calculateAge(candidate.dateOfBirth) >= calculateAge(customer.dateOfBirth)
     ) {
       return false;
     }
@@ -129,13 +117,62 @@ function passesHardFilters(customer, candidate) {
       return false;
     }
 
-    if (candidate.income > customer.income) {
+    if (candidate.income >= customer.income) {
+      return false;
+    }
+
+    if (customer.openToRelocate !== candidate.openToRelocate && !sameLocation) {
       return false;
     }
   } else {
     if (candidate.gender !== "Male") {
       return false;
     }
+
+    const sameProfessionOrValues =
+      customer.currentCompany === candidate.currentCompany ||
+      customer.designation === candidate.designation ||
+      customer.degree === candidate.degree ||
+      customer.college === candidate.college;
+
+    if (!sameProfessionOrValues) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function passesFallbackFilters(customer, candidate) {
+  if (candidate.verified !== "Yes") {
+    return false;
+  }
+
+  if (customer.gender === "Male" && candidate.gender !== "Female") {
+    return false;
+  }
+
+  if (customer.gender === "Female" && candidate.gender !== "Male") {
+    return false;
+  }
+
+  if (customer.religion !== candidate.religion) {
+    return false;
+  }
+
+  if (customer.wantKids !== candidate.wantKids) {
+    return false;
+  }
+
+  const sameLocation =
+    customer.country === candidate.country && customer.city === candidate.city;
+
+  if (
+    !sameLocation &&
+    customer.openToRelocate !== "Yes" &&
+    candidate.openToRelocate !== "Yes"
+  ) {
+    return false;
   }
 
   return true;
@@ -144,31 +181,33 @@ function passesHardFilters(customer, candidate) {
 export function getTopMatches(customer, profiles) {
   const customerVector = profileToVector(customer);
 
-  const matches = profiles
+  const scoredProfiles = profiles
     .filter((profile) => profile.id !== customer.id)
-    .filter((profile) =>
-      passesHardFilters(customer, profile)
-    )
     .map((profile) => {
       const profileVector = profileToVector(profile);
 
-      const similarity = cosineSimilarity(
-        customerVector,
-        profileVector
-      );
+      const similarity = cosineSimilarity(customerVector, profileVector);
 
       return {
         ...profile,
-        similarityScore: Number(
-          (similarity * 100).toFixed(2)
-        ),
+        similarityScore: Number((similarity * 100).toFixed(2)),
       };
-    })
-    .sort(
-      (a, b) =>
-        b.similarityScore - a.similarityScore
-    )
+    });
+
+  const hardMatches = scoredProfiles
+    .filter((profile) => passesHardFilters(customer, profile))
+    .sort((a, b) => b.similarityScore - a.similarityScore)
     .slice(0, 10);
 
-  return matches;
+  if (hardMatches.length > 0) {
+    return hardMatches;
+  }
+
+  const fallbackMatches = scoredProfiles
+    .filter((profile) => passesFallbackFilters(customer, profile))
+    .sort((a, b) => b.similarityScore - a.similarityScore)
+    .slice(0, 10)
+    .map((profile) => ({ ...profile, fallback: true }));
+
+  return fallbackMatches;
 }
