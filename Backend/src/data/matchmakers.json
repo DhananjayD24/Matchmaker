@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "username": "matchmaker1",
+    "password": "123456",
+    "name": "Priya Sharma"
+  },
+  {
+    "id": 2,
+    "username": "matchmaker2",
+    "password": "123456",
+    "name": "Rahul Mehta"
+  }
+]
