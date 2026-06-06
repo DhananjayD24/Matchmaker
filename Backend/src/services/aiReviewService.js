@@ -1,106 +1,167 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatGroq } from "@langchain/groq";
 
 function getLLM() {
-  return new ChatGoogleGenerativeAI({
-    model: "gemini-2.0-flash",
-    apiKey: process.env.GEMINI_API_KEY,
+  console.log(
+    "Loaded Key:",
+    process.env.GROQ_API_KEY
+      ? "Groq"
+      : process.env.GEMINI_API_KEY
+        ? "Gemini"
+        : "None",
+  );
+  // return new ChatGoogleGenerativeAI({
+  //   model: "gemini-2.0-flash",
+  //   apiKey: process.env.GEMINI_API_KEY,
+  //   temperature: 0.3,
+  // });
+  return new ChatGroq({
+    apiKey: process.env.GROQ_API_KEY,
+    model: "llama-3.1-8b-instant",
     temperature: 0.3,
   });
 }
 
 export async function generateAIReview(customer, customerNotes, matches) {
+  function pickProfile(p) {
+    if (!p) return null;
+    const {
+      id,
+      firstName,
+      lastName,
+      name,
+      age,
+      gender,
+      city,
+      country,
+      location,
+      maritalStatus,
+      children,
+      childrenPreference,
+      education,
+      occupation,
+      hobbies,
+      relocationPreferences,
+      languages,
+      pets,
+      verified,
+    } = p;
+
+    return {
+      id,
+      name:
+        name || [firstName, lastName].filter(Boolean).join(" ") || undefined,
+      age,
+      location: location || (city || country ? { city, country } : undefined),
+      maritalStatus,
+      childrenPreference,
+      education,
+      occupation,
+      hobbies,
+      relocationPreferences,
+      languages,
+      pets,
+    };
+  }
+
+  function minimalNotes(notes = []) {
+    return notes
+      .slice(0, 5)
+      .map((n) => ({
+        id: n.id,
+        text: n.text || n.note || n.content || n.body,
+        date: n.date || n.createdAt,
+      }));
+  }
+
+  // Only send one match (the first) to reduce tokens
+  const singleMatch =
+    Array.isArray(matches) && matches.length ? matches[0] : matches;
+
   const payload = {
-    customer,
-    customerNotes,
-    matches,
+    customer: pickProfile(customer),
+    customerNotes: minimalNotes(customerNotes),
+    match: pickProfile(singleMatch),
+    matchNotes: minimalNotes(singleMatch && singleMatch.notes),
   };
   const llm = getLLM();
-  const prompt = `
-You are an expert matrimonial matchmaker.
+  const prompt = `You are an expert matrimonial matchmaker.\n\nAnalyze the following minimal profile data (one match):\n\n${JSON.stringify(payload)}\n\nReturn a JSON array with one object for the match containing: {"profileId": number, "pros": [], "cons": [], "overallCompatibility": "High|Medium|Low", "summary": "", "matchIntroduction": ""}. \n\nRules: Return only valid JSON, no markdown, do not invent extra profiles, max 3 pros, max 3 cons, summary max 2 sentences, matchIntroduction max 3 sentences. Prioritize notes, children preferences, education, career, family values, language, relocation, lifestyle, hobbies, pets.`;
 
-Analyze the following data:
+  console.log(JSON.stringify(payload));
 
-${JSON.stringify(payload, null, 2)}
-
-Pay special attention to:
-- notes
-- hobbies
-- relocation preferences(city, country)
-- marital status
-- children preferences
-- lifestyle compatibility
-- education compatibility
-- career compatibility
-- values compatibility
-- family compatibility
-- language compatibility
-- open to pets
-- verified profiles
-
-For EACH profile provide:
-
-[
-  {
-    "profileId": number,
-    "pros": [],
-    "cons": [],
-    "overallCompatibility": "High|Medium|Low",
-    "summary": "",
-    "matchIntroduction": ""
+  let responseContent = null;
+  try {
+    const response = await llm.invoke(prompt);
+    responseContent =
+      response && (response.content || response.text || response);
+  } catch (err) {
+    console.error("LLM invoke failed:", err?.message || err);
+    return [
+      {
+        profileId: payload.match?.id || payload.customer?.id || null,
+        pros: [],
+        cons: [],
+        overallCompatibility: "Unknown",
+        summary: `LLM invoke failed: ${err?.message || "no message"}`,
+        matchIntroduction: "",
+      },
+    ];
   }
-]
 
-IMPORTANT:
-- Analyze ONLY the profiles provided.
-- Do NOT invent additional profiles.
-- Do NOT create more profiles than provided.
-- Return ONLY valid JSON.
-- Do not use markdown.
-
-Select ONLY the most important compatibility factors.
-
-Do NOT mention religion or caste unless they create a concern.
-
-Prioritize analysis in this order:
-
-1. Notes-based insights
-2. Children preferences and timeline
-3. Education compatibility
-4. Career compatibility
-5. Family values and siblings/family structure
-6. Language compatibility
-7. Relocation compatibility
-8. Lifestyle compatibility
-9. Hobbies and interests
-10. Pet preferences
-
-For each profile:
-
-- Show maximum 3 pros.
-- Show maximum 3 cons.
-- Focus on meaningful differences and similarities.
-- Ignore obvious matches already enforced by the matching algorithm.
-- Do not mention religion or caste unless relevant to a concern.
-- Summary maximum 2 sentences.
-- MatchIntroduction maximum 3 sentences.
-`;
-
-  console.log(
-  JSON.stringify(payload, null, 2)
-);
-  const response = await llm.invoke(prompt);
-
-  const cleaned = response.content
+  const cleaned = String(responseContent || "")
     .replace(/```json/g, "")
     .replace(/```/g, "")
     .trim();
 
+  // Try to parse JSON robustly: full string, then extract array/object, then fallback
   try {
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+    return Array.isArray(parsed) ? parsed : [parsed];
   } catch (err) {
-    console.error("Invalid AI Response:");
+    console.warn(
+      "Primary JSON parse failed, attempting to extract JSON substring...",
+    );
+    // Attempt to extract a JSON array
+    try {
+      const arrMatch = cleaned.match(/\[([\s\S]*)\]/);
+      if (arrMatch) {
+        const arrText = `[` + arrMatch[1] + `]`;
+        const parsed = JSON.parse(arrText);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      }
+    } catch (e) {
+      // fall through
+    }
+
+    // Attempt to extract a JSON object and wrap in array
+    try {
+      const objMatch = cleaned.match(/\{([\s\S]*)\}/);
+      if (objMatch) {
+        const objText = `{` + objMatch[1] + `}`;
+        const parsed = JSON.parse(objText);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      }
+    } catch (e) {
+      // fall through
+    }
+
+    // If all parsing fails, return a safe fallback so frontend still gets JSON
+    console.error(
+      "AI did not return valid JSON after extraction attempts. Returning fallback.",
+    );
     console.error(cleaned);
 
-    throw new Error("AI did not return valid JSON");
+    const fallback = [
+      {
+        profileId: payload.match?.id || payload.customer?.id || null,
+        pros: [],
+        cons: [],
+        overallCompatibility: "Unknown",
+        summary: "AI did not return valid JSON.",
+        matchIntroduction: (cleaned || "").slice(0, 800),
+      },
+    ];
+
+    return fallback;
   }
 }
