@@ -1,21 +1,16 @@
-export default function NotesList({
-  notes,
-}) {
+export default function NotesList({ notes }) {
+  const formattedNotes = notes.map((note) => note.note?.trim()).filter(Boolean);
+
   return (
-    <div className="space-y-3">
-      {notes.length === 0 ? (
-        <p className="text-gray-500">
-          No notes available
-        </p>
+    <div className="text-sm leading-7 text-slate-700">
+      {formattedNotes.length === 0 ? (
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-slate-500">
+          No notes have been added yet.
+        </div>
       ) : (
-        notes.map((note, index) => (
-          <div
-            key={index}
-            className="border rounded-lg p-3 bg-slate-50"
-          >
-            <p>{note.note}</p>
-          </div>
-        ))
+        <p className="rounded-3xl border border-slate-200 bg-white p-4 text-slate-700 shadow-sm">
+          {formattedNotes.join(", ")}
+        </p>
       )}
     </div>
   );

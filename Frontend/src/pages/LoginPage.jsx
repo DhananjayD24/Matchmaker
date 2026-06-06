@@ -306,13 +306,7 @@ export default function LoginPage() {
         {/* RIGHT COLUMN: LOGIN FORM */}
         <div className="w-full md:w-1/2 p-8 sm:p-12 flex flex-col justify-center relative bg-white">
           <div className="absolute left-6 top-6 z-20">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition duration-200 hover:border-slate-300 hover:bg-slate-50"
-            >
-              <FaArrowLeft className="text-sm" /> Back
-            </button>
+            
           </div>
 
           {/* Main Form Content wrapper */}
