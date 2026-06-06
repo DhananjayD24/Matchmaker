@@ -205,6 +205,57 @@ Send Match to Both Parties
 
 ---
 
+## Local Setup
+
+### Backend Environment
+
+1. Open a terminal in `Backend`
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create or update `.env` in `Backend` with:
+   ```env
+   PORT=5000
+   GEMINI_API_KEY=your_gemini_api_key
+   GROQ_API_KEY=your_groq_api_key
+   ```
+4. Start the backend server:
+   ```bash
+   npm run dev
+   ```
+   or for production-style start:
+   ```bash
+   npm start
+   ```
+
+### Frontend Environment
+
+1. Open a terminal in `Frontend`
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create or update `.env` in `Frontend` with:
+   ```env
+   VITE_API_URL=http://localhost:5000/api
+   ```
+4. Start the frontend development server:
+   ```bash
+   npm run dev
+   ```
+
+### Running the Project
+
+1. Make sure the backend is running first.
+2. Launch the frontend.
+3. Open the Vite development URL shown in the frontend terminal (usually `http://localhost:5173`).
+4. Use the UI to view customers, generate matches, and request AI reviews.
+
+> If the backend port changes, update `VITE_API_URL` in `Frontend/.env` to match the backend URL.
+
+---
+
 ## Key Features
 
 ✅ **Two-Tier Matching:** Strict rules + AI-powered fallback
